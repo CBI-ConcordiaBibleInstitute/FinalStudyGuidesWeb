@@ -1,0 +1,27 @@
+#!/usr/bin/env osascript -l JavaScript
+// Convert one .docx to PDF using Microsoft Word (high-fidelity).
+// Usage: osascript -l JavaScript docx-to-pdf.jxa <input.docx> <output.pdf>
+ObjC.import('stdlib');
+
+function run(argv) {
+  if (argv.length < 2) {
+    throw new Error('usage: docx-to-pdf.jxa <input.docx> <output.pdf>');
+  }
+  const [inputPath, outputPath] = argv;
+
+  const Word = Application('Microsoft Word');
+  Word.includeStandardAdditions = true;
+
+  Word.open(Path(inputPath));
+  const doc = Word.activeDocument;
+
+  try {
+    // Word for Mac AppleScript dictionary exposes `save as` on the application
+    // with the document as the direct param.
+    Word.saveAs(doc, { fileName: outputPath, fileFormat: 'PDF ' });
+  } finally {
+    doc.close({ saving: 'no' });
+  }
+
+  return outputPath;
+}

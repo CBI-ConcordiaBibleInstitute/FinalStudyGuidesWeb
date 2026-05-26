@@ -1,0 +1,24 @@
+node_modules
+.next
+out
+.env.local
+.env*.local
+.DS_Store
+*.log
+npm-debug.log*
+
+# Vercel
+.vercel/
+
+# Logs
+logs/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Study guide PDFs — source of truth is Supabase Storage.
+# Re-stage locally with scripts/replace-formatted-pdfs.mjs (or copy from
+# ~/Downloads/Formatted-PDF) before running scripts/upload-pdfs.mjs.
+public/guides/

@@ -1,0 +1,69 @@
+#!/usr/bin/env osascript -l JavaScript
+// Robust docx → PDF converter that keeps Word open across all jobs,
+// retries on transient AppleEvent timeouts, and never bails mid-batch.
+//
+// Reads a newline-delimited list of jobs from stdin or from arg[0]:
+//   /path/in.docx\t/path/out.pdf
+//
+// Prints one JSON line per file:
+//   {"status":"ok"|"failed", "input":"...", "output":"...", "elapsed_ms":N, "error":"..."}
+//
+// Exit code is always 0; the caller inspects the per-line JSON.
+
+ObjC.import("stdlib");
+ObjC.import("Foundation");
+
+const RETRIES = 2;
+const RETRY_DELAY_SEC = 3;
+
+function readJobsFromFile(path) {
+  const data = $.NSString.stringWithContentsOfFileEncodingError(path, $.NSUTF8StringEncoding, null);
+  if (!data) {
+    console.log(JSON.stringify({ status: "fatal", error: `cannot read jobs file: ${path}` }));
+    $.exit(2);
+  }
+  return data.js.split("\n").map(l => l.trim()).filter(Boolean).map(line => {
+    const [input, output] = line.split("\t");
+    return { input, output };
+  });
+}
+
+function convertOne(word, doc_input, doc_output) {
+  const start = Date.now();
+  let lastErr = null;
+  for (let attempt = 0; attempt <= RETRIES; attempt++) {
+    try {
+      word.open(Path(doc_input));
+      const doc = word.activeDocument;
+      doc.saveAs({ fileName: doc_output, fileFormat: "format PDF" });
+      doc.close({ saving: "no" });
+      return { status: "ok", input: doc_input, output: doc_output, elapsed_ms: Date.now() - start, attempts: attempt + 1 };
+    } catch (e) {
+      lastErr = e.toString();
+      // Best-effort cleanup before retry: close any leftover doc.
+      try { word.activeDocument.close({ saving: "no" }); } catch (_) {}
+      if (attempt < RETRIES) delay(RETRY_DELAY_SEC);
+    }
+  }
+  return { status: "failed", input: doc_input, output: doc_output, elapsed_ms: Date.now() - start, attempts: RETRIES + 1, error: lastErr };
+}
+
+function run(argv) {
+  if (argv.length < 1) {
+    console.log(JSON.stringify({ status: "fatal", error: "usage: convert-all.jxa <jobs.tsv>" }));
+    $.exit(2);
+  }
+  const jobs = readJobsFromFile(argv[0]);
+
+  const SystemEvents = Application("System Events");
+  const word = Application("Microsoft Word");
+  word.launch();
+  try { SystemEvents.processes["Microsoft Word"].visible = false; } catch (_) {}
+
+  for (const job of jobs) {
+    const result = convertOne(word, job.input, job.output);
+    console.log(JSON.stringify(result));
+  }
+
+  try { word.quit(); } catch (_) {}
+}
