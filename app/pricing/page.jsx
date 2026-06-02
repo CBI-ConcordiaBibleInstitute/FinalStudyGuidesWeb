@@ -1,22 +1,24 @@
 import PageHeader from "@/components/PageHeader";
 import PricingPlans from "@/components/PricingPlans";
 import Reveal from "@/components/Reveal";
-import { SITE } from "@/lib/catalog-shared";
+import { getSettings } from "@/lib/catalog";
 
-export const metadata = {
-  title: "Pricing",
-  description:
-    "Every episode is $99 — the full companion study guide and video, yours to keep.",
-};
+export async function generateMetadata() {
+  const { price } = await getSettings();
+  return {
+    title: "Pricing",
+    description: `Every episode is $${price} — the full companion study guide and video, yours to keep.`,
+  };
+}
 
-const FAQ = [
+const buildFaq = (price) => [
   {
-    q: "What do I get for $99?",
-    a: "Each $99 purchase unlocks one episode in full — the complete companion study guide and the episode video. The guide is viewable in-page and downloadable, and it's yours to keep.",
+    q: `What do I get for $${price}?`,
+    a: `Each $${price} purchase unlocks one episode in full — the complete companion study guide and the episode video. The guide is viewable in-page and downloadable, and it's yours to keep.`,
   },
   {
     q: "Do I have to subscribe?",
-    a: "No. There are no subscriptions or tiers — you buy episodes individually, one at a time, for $99 each. Add as many as you like to your cart and check out together.",
+    a: `No. There are no subscriptions or tiers — you buy episodes individually, one at a time, for $${price} each. Add as many as you like to your cart and check out together.`,
   },
   {
     q: "Is anything free?",
@@ -24,7 +26,7 @@ const FAQ = [
   },
   {
     q: "How does payment work?",
-    a: "Each episode is a one-time $99 payment through Stripe. There's no recurring billing and nothing to cancel.",
+    a: `Each episode is a one-time $${price} payment through CashNet. There's no recurring billing and nothing to cancel.`,
   },
   {
     q: "What is your refund policy?",
@@ -32,13 +34,15 @@ const FAQ = [
   },
 ];
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const { price } = await getSettings();
+  const FAQ = buildFaq(price);
   return (
     <>
       <PageHeader
         eyebrow="Pricing"
         title="Simple, honest pricing"
-        subtitle={`One price for every episode — the full study guide and video for $${SITE.price}. No tiers, no subscription.`}
+        subtitle={`One price for every episode — the full study guide and video for $${price}. No tiers, no subscription.`}
       />
 
       <div className="container-cb section">

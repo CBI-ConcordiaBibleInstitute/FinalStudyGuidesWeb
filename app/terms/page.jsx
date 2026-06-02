@@ -19,7 +19,7 @@ export default function TermsPage() {
         },
         {
           heading: "Purchases",
-          body: "Study guides are sold individually as one-time purchases of $99 per episode. Purchased guides remain available in your library. Prices are shown in US dollars and processed securely by Stripe.",
+          body: "Study guides are sold individually as one-time purchases of $20 per episode. Purchased guides remain available in your library. Prices are shown in US dollars and processed securely by CashNet.",
         },
         {
           heading: "Refunds",

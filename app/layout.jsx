@@ -3,6 +3,7 @@ import { Roboto_Slab, Roboto } from "next/font/google";
 import Providers from "@/components/Providers";
 import Header from "@/components/Header";
 import { SITE } from "@/lib/catalog-shared";
+import { getSettings } from "@/lib/catalog";
 
 // Typography matched to concordiabible.org — Roboto Slab for headings,
 // Roboto for body (closest current Google equivalent of the retired
@@ -20,41 +21,48 @@ const body = Roboto({
   display: "swap",
 });
 
-export const metadata = {
-  metadataBase: new URL("https://concordiastudyguides.com"),
-  title: {
-    default: `${SITE.name} — Premium Bible Study Guides & Podcast`,
-    template: `%s · ${SITE.name}`,
-  },
-  description:
-    "Study the whole counsel of Scripture with the Christ in Every Word podcast and 300+ downloadable study guides from Concordia Bible Institute.",
-  keywords: [
-    "Bible study guides",
-    "Concordia Bible Institute",
-    "Christ in Every Word",
-    "Lutheran Bible study",
-    "podcast study guides",
-  ],
-  openGraph: {
-    title: `${SITE.name} — Premium Bible Study Guides`,
-    description: SITE.tagline,
-    type: "website",
-  },
-  robots: { index: true, follow: true },
-};
+export async function generateMetadata() {
+  const { name } = await getSettings();
+  return {
+    metadataBase: new URL("https://concordiastudyguides.com"),
+    title: {
+      default: `${name} — Premium Bible Study Guides & Podcast`,
+      template: `%s · ${name}`,
+    },
+    description:
+      "Study the whole counsel of Scripture with the Christ in Every Word podcast and 300+ downloadable study guides from Concordia Bible Institute.",
+    keywords: [
+      "Bible study guides",
+      "Concordia Bible Institute",
+      "Christ in Every Word",
+      "Lutheran Bible study",
+      "podcast study guides",
+    ],
+    openGraph: {
+      title: `${name} — Premium Bible Study Guides`,
+      description: SITE.tagline,
+      type: "website",
+    },
+    robots: { index: true, follow: true },
+  };
+}
 
 export const viewport = {
   themeColor: "#660e1b",
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const settings = await getSettings();
   return (
     <html
       lang="en"
       className={`${serif.variable} ${body.variable}`}
     >
-      <body className="flex min-h-screen flex-col bg-white">
-        <Providers>
+      <body
+        className="flex min-h-screen flex-col bg-white"
+        style={{ "--brand-primary": settings.primaryColor }}
+      >
+        <Providers settings={settings}>
           <a
             href="#main"
             className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[200] focus:rounded focus:bg-maroon focus:px-4 focus:py-2 focus:text-white"

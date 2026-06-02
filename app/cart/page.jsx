@@ -7,12 +7,15 @@ import { Trash2, ShoppingBag, Loader2, Lock, ArrowRight, Check } from "lucide-re
 import { useCart, GUIDE_PRICE } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
-import { notifyPurchase } from "@/lib/notifications";
+
+// External payment processor. Checkout hands off to CashNet's hosted page,
+// which takes over payment and everything after it.
+const CHECKOUT_URL = "https://commerce.cashnet.com/CBI_Study_Guides";
 
 export default function CartPage() {
   const router = useRouter();
   const { items, remove, clear, total } = useCart();
-  const { user, recordDownload } = useAuth();
+  const { user } = useAuth();
   const { push } = useToast();
   const [processing, setProcessing] = useState(false);
 
@@ -23,19 +26,9 @@ export default function CartPage() {
       return;
     }
     setProcessing(true);
-    // Integration point: create a Stripe Checkout session for these line items.
-    const purchasedItems = items.slice();
-    const purchasedTotal = total;
-    setTimeout(() => {
-      purchasedItems.forEach((i) => recordDownload(i.episodeId));
-      clear();
-      try {
-        notifyPurchase(user, purchasedItems, purchasedTotal);
-      } catch { /* email is best-effort */ }
-      setProcessing(false);
-      push("Payment successful — your guides are in your library.");
-      router.push("/dashboard");
-    }, 1300);
+    // Hand off to the CashNet hosted checkout page — CashNet handles payment
+    // and everything after from there.
+    window.location.href = CHECKOUT_URL;
   };
 
   return (
@@ -156,7 +149,7 @@ export default function CartPage() {
                 </p>
               </div>
               <p className="mt-3 text-center text-[11px] text-ink">
-                Payments processed by Stripe · 14-day refund policy
+                Payments processed by CashNet · 14-day refund policy
               </p>
             </div>
           </aside>

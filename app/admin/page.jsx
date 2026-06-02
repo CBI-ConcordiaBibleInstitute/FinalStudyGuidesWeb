@@ -120,7 +120,7 @@ export default function AdminDashboard() {
       icon: DollarSign,
       label: "Revenue",
       value: "—",
-      trend: "Connect Stripe to track sales",
+      trend: "Sales processed via CashNet",
     },
   ];
 
