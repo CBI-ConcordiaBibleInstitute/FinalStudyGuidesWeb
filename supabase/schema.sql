@@ -276,3 +276,46 @@ create policy "guides admin update"
 create policy "guides admin delete"
   on storage.objects for delete
   using (bucket_id = 'study-guides' and public.is_admin());
+
+-- ─── site_settings ─────────────────────────────────────────────────────────
+-- Single-row table holding admin-editable site configuration (branding +
+-- pricing). The fixed `id = 1` + check constraint guarantees there is only
+-- ever one row, so the app always selects/upserts it by id. Stripe keys are
+-- deliberately NOT stored here: secrets stay in env vars, and this table is
+-- world-readable (the values drive the public site).
+create table if not exists public.site_settings (
+  id            int primary key default 1 check (id = 1),
+  site_name     text not null default 'Concordia Bible Institute',
+  support_email text not null default 'contact@concordiastudyguides.com',
+  episode_price numeric(10,2) not null default 20,
+  primary_color text not null default '#660e1b',
+  updated_at    timestamptz not null default now()
+);
+
+-- Seed the single row so a fresh DB already has defaults to read/edit.
+insert into public.site_settings (id) values (1) on conflict (id) do nothing;
+
+drop trigger if exists site_settings_touch on public.site_settings;
+create trigger site_settings_touch before update on public.site_settings
+  for each row execute function public.touch_updated_at();
+
+alter table public.site_settings enable row level security;
+
+drop policy if exists "settings public read"  on public.site_settings;
+drop policy if exists "settings admin insert" on public.site_settings;
+drop policy if exists "settings admin update" on public.site_settings;
+
+-- Anyone (incl. the anon role) may read settings — they render the public site.
+create policy "settings public read"
+  on public.site_settings for select
+  using (true);
+
+-- Only admins may create or modify the row.
+create policy "settings admin insert"
+  on public.site_settings for insert
+  with check (public.is_admin());
+
+create policy "settings admin update"
+  on public.site_settings for update
+  using (public.is_admin())
+  with check (public.is_admin());

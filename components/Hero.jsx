@@ -3,9 +3,11 @@ import Link from "next/link";
 import { ArrowRight, PlayCircle } from "lucide-react";
 import SearchBar from "@/components/SearchBar";
 import { SITE, STATS } from "@/lib/catalog-shared";
+import { useSettings } from "@/context/SettingsContext";
 
 // Plain hero — concordiabible.org style. No orbs, no 3D, no gradient text.
 export default function Hero() {
+  const { price } = useSettings();
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-white via-white to-panel">
       {/* Soft glowing aurora behind the hero — purely decorative */}
@@ -43,7 +45,7 @@ export default function Hero() {
               Explore podcasts <ArrowRight size={16} />
             </Link>
             <Link href="/pricing" className="btn-ghost">
-              <PlayCircle size={16} /> See pricing — ${SITE.price}/episode
+              <PlayCircle size={16} /> See pricing — ${price}/episode
             </Link>
           </div>
 

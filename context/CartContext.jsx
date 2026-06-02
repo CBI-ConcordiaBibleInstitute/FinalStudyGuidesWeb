@@ -1,12 +1,12 @@
 "use client";
-// Shopping cart for study guides. Each episode is a one-time $99 purchase
+// Shopping cart for study guides. Each episode is a one-time $20 purchase
 // that unlocks its study guide and video. Persisted to localStorage.
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 
 const CartContext = createContext(null);
 export const useCart = () => useContext(CartContext);
 
-export const GUIDE_PRICE = 99;
+export const GUIDE_PRICE = 20;
 const KEY = "cb_cart";
 
 export function CartProvider({ children }) {

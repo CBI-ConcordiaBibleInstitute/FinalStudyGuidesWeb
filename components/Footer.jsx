@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Mail, Youtube, BookOpen, ArrowUpRight } from "lucide-react";
 import Logo from "@/components/Logo";
 import { SITE } from "@/lib/catalog-shared";
+import { useSettings } from "@/context/SettingsContext";
 
 const PRIMARY = [
   { href: "/podcasts", label: "Podcasts" },
@@ -20,6 +21,7 @@ const SECONDARY = [
 ];
 
 export default function Footer() {
+  const { email } = useSettings();
   return (
     <footer className="relative mt-16 overflow-hidden bg-maroon-gradient text-cream">
       <div
@@ -69,10 +71,10 @@ export default function Footer() {
           <ul className="mt-5 space-y-2.5 text-sm">
             <li>
               <a
-                href={`mailto:${SITE.email}`}
+                href={`mailto:${email}`}
                 className="group inline-flex items-center gap-2 text-cream/80 transition hover:text-white"
               >
-                <Mail size={14} /> {SITE.email}
+                <Mail size={14} /> {email}
                 <ArrowUpRight size={14} className="opacity-0 transition group-hover:opacity-100" />
               </a>
             </li>

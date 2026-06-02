@@ -4,12 +4,12 @@ import Hero from "@/components/Hero";
 import Reveal from "@/components/Reveal";
 import PodcastCard from "@/components/PodcastCard";
 import PricingPlans from "@/components/PricingPlans";
-import { getFeatured } from "@/lib/catalog";
-import { SITE } from "@/lib/catalog-shared";
+import { getFeatured, getSettings } from "@/lib/catalog";
 
 export default async function HomePage() {
   // Catalog unreachable (e.g. CI build without Supabase env) → empty grid.
   const featured = await getFeatured(6).catch(() => []);
+  const { price } = await getSettings();
 
   return (
     <>
@@ -51,7 +51,7 @@ export default async function HomePage() {
             </h2>
             <div className="mx-auto mt-4 rule" />
             <p className="mx-auto mt-5 max-w-xl text-lg text-ink">
-              Start free, then buy episodes as you go — ${SITE.price} each, no
+              Start free, then buy episodes as you go — ${price} each, no
               subscription.
             </p>
           </Reveal>

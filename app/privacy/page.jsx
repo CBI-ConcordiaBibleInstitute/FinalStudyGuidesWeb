@@ -11,7 +11,7 @@ export default function PrivacyPage() {
       sections={[
         {
           heading: "Information we collect",
-          body: "We collect your name and email when you create an account, and a record of the study guides you access. Payment details are handled entirely by Stripe — we never store card numbers.",
+          body: "We collect your name and email when you create an account, and a record of the study guides you access. Payment details are handled entirely by CashNet — we never store card numbers.",
         },
         {
           heading: "How we use your information",

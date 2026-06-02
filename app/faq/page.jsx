@@ -1,10 +1,10 @@
 import PageHeader from "@/components/PageHeader";
 import Reveal from "@/components/Reveal";
-import { SITE } from "@/lib/catalog-shared";
+import { getSettings } from "@/lib/catalog";
 
 export const metadata = { title: "FAQ" };
 
-const FAQ = [
+const buildFaq = (price) => [
   {
     q: "How do the free episodes work?",
     a: "The first episode of every series — all 22 — is completely free. You get the teaching video and the full downloadable study guide with no account or card required.",
@@ -15,7 +15,7 @@ const FAQ = [
   },
   {
     q: "How do I unlock a paid episode?",
-    a: `Each episode is a one-time $${SITE.price} purchase that unlocks the full study guide and the episode video. There are no subscriptions — add the episodes you want to your cart and check out together.`,
+    a: `Each episode is a one-time $${price} purchase that unlocks the full study guide and the episode video. There are no subscriptions — add the episodes you want to your cart and check out together.`,
   },
   {
     q: "Can I use these in a small group or Bible class?",
@@ -31,7 +31,9 @@ const FAQ = [
   },
 ];
 
-export default function FaqPage() {
+export default async function FaqPage() {
+  const { price, email } = await getSettings();
+  const FAQ = buildFaq(price);
   return (
     <>
       <PageHeader
@@ -58,10 +60,10 @@ export default function FaqPage() {
         <p className="mt-14 text-center text-ink">
           Still have a question?{" "}
           <a
-            href={`mailto:${SITE.email}`}
+            href={`mailto:${email}`}
             className="font-semibold text-maroon hover:underline"
           >
-            {SITE.email}
+            {email}
           </a>
         </p>
       </div>
