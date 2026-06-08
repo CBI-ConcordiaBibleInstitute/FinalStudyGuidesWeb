@@ -10,9 +10,18 @@ import { SITE } from "@/lib/catalog-shared";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// Sender address. onboarding@resend.dev works with NO domain verification,
+// but Resend then only delivers to your own account email (fine for the
+// owner-only sale notification). Switch to noreply@concordiabible.org once
+// that domain is verified in Resend. Override via EMAIL_FROM in .env.local.
 const FROM =
   process.env.EMAIL_FROM ||
-  `${SITE.name} <contact@concordiastudyguides.com>`;
+  `${SITE.name} <onboarding@resend.dev>`;
+
+// Where replies (and any "reply to this email" prompts) should land. Use a
+// real inbox you actually read — defaults to the owner's tracking address.
+const REPLY_TO =
+  process.env.NEXT_PUBLIC_ADMIN_EMAIL || SITE.email;
 
 export async function POST(req) {
   let payload;
@@ -33,6 +42,24 @@ export async function POST(req) {
   const html = renderEmail({ subject, preview, body, ctaUrl, ctaLabel });
   const text = body;
 
+  // Owner-only (sandbox) guard. The free onboarding@resend.dev sender can only
+  // deliver to your own Resend account address, so member-facing sends to any
+  // other recipient come back as a 403. Until a sending domain is verified,
+  // silently skip non-owner recipients instead of erroring. This lifts itself
+  // automatically once EMAIL_FROM is switched to an address on a real domain.
+  const sandbox = /onboarding@resend\.dev/i.test(FROM);
+  if (sandbox) {
+    const owner = (REPLY_TO || "").toLowerCase();
+    const recipients = (Array.isArray(to) ? to : [to]).map((r) =>
+      String(r).toLowerCase()
+    );
+    if (!owner || !recipients.every((r) => r === owner)) {
+      // eslint-disable-next-line no-console
+      console.info("[email:sandbox] skipped non-owner recipient", to, "·", subject);
+      return NextResponse.json({ ok: true, skipped: "sandbox-non-owner" });
+    }
+  }
+
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     // Dev fallback: act like the old deliver(). The Admin · Email page still
@@ -50,7 +77,7 @@ export async function POST(req) {
       subject,
       html,
       text,
-      replyTo: replyTo || SITE.email,
+      replyTo: replyTo || REPLY_TO,
     });
     if (error) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 502 });

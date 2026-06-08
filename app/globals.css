@@ -4,6 +4,10 @@
 
 :root {
   color-scheme: light;
+  /* Admin-editable brand primary color. The root layout overrides this with
+     the saved value from site_settings via an inline style on <body>; this
+     default keeps things working before that loads / outside the app. */
+  --brand-primary: #660e1b;
 }
 
 html {
@@ -77,13 +81,15 @@ a.underline {
     @apply btn text-white;
     position: relative;
     overflow: hidden;
+    /* Shine gradient derived from the live --brand-primary so the admin's
+       chosen color drives primary buttons. Lighter mid-stops via color-mix. */
     background-image: linear-gradient(
       110deg,
-      #660e1b 0%,
-      #8a1a28 40%,
-      #b85362 50%,
-      #8a1a28 60%,
-      #660e1b 100%
+      var(--brand-primary) 0%,
+      color-mix(in srgb, var(--brand-primary) 78%, white) 40%,
+      color-mix(in srgb, var(--brand-primary) 55%, white) 50%,
+      color-mix(in srgb, var(--brand-primary) 78%, white) 60%,
+      var(--brand-primary) 100%
     );
     background-size: 220% 100%;
     animation: btn-shine-slide 4s linear infinite;
