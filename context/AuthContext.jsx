@@ -80,7 +80,19 @@ export function AuthProvider({ children }) {
     const { error } = await sb.auth.signInWithPassword({ email, password });
     if (error) return { ok: false, error: error.message };
     const u = await refresh();
-    try { if (u) notifyLogin(u); } catch {}
+    // Send the "new sign-in" security alert only the first time this account
+    // signs in on this device — like Google/banks do — instead of on every
+    // login, which is too noisy. The flag is per-user so a different account
+    // signing in on the same device still gets its own first-time alert.
+    try {
+      if (u && typeof window !== "undefined") {
+        const key = `cb_signin_alerted_${u.id}`;
+        if (!localStorage.getItem(key)) {
+          notifyLogin(u);
+          try { localStorage.setItem(key, new Date().toISOString()); } catch {}
+        }
+      }
+    } catch {}
     return { ok: true };
   }, [sb, refresh]);
 
