@@ -1,60 +1,72 @@
-# Branded transactional email — setup checklist
+# Email setup — Concordia Bible Institute
 
-Concordia sends email from two places:
+Two things send email, configured in two different places:
 
-1. **Our app** — every notification in `lib/notifications.js` → `lib/email.js` →
-   `POST /api/email/send` → Resend. Already branded with the wrapper in
-   `lib/email-html.js`. Once `RESEND_API_KEY` and `EMAIL_FROM` are set in
-   `.env.local`, real email goes out.
+| Email | Sent by | Set up in |
+|-------|---------|-----------|
+| **Password reset / forgot password** | **Supabase Auth** (built-in) | Supabase dashboard (Part A) |
+| **"New sale" notification to the owner** | **Our app → Resend** | `.env.local` + Resend (Part B) |
 
-2. **Supabase Auth** — the "Confirm your email", password reset, and magic-link
-   emails Supabase itself sends in response to `auth.signUp()` /
-   `auth.resetPasswordForEmail()`. By default those use Supabase's generic
-   template and `noreply@supabase.io`. To make them look like Concordia, do the
-   following inside the Supabase dashboard (one-time):
+Neither needs DNS changes on `concordiabible.org` (whose DNS is run by CUW IT).
 
-   **a. SMTP — point Supabase Auth at Resend**
-   - Project Settings → Auth → SMTP Settings → Enable Custom SMTP.
-   - Host: `smtp.resend.com` · Port `465` · User `resend` · Pass `<your RESEND_API_KEY>`.
-   - Sender email: `contact@concordiastudyguides.com` (must match a verified
-     domain in Resend).
-   - Sender name: `Concordia Bible Institute`.
+---
 
-   **b. Template — replace the "Confirm signup" body**
-   - Authentication → Email Templates → "Confirm signup".
-   - Subject: `Verify your email for Concordia Bible Institute`
-   - Body (HTML) — paste:
+## Part A — Password reset (Supabase, no third party)
 
-     ```html
-     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f6efe3;padding:32px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
-       <tr><td align="center">
-         <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#fff;border-radius:14px;overflow:hidden;border:1px solid rgba(122,28,47,0.10)">
-           <tr><td style="background:#7a1c2f;padding:22px 32px" align="left">
-             <a href="{{ .SiteURL }}" style="text-decoration:none;color:#fff;font-family:Georgia,serif;font-size:20px;font-weight:700">Concordia Bible Institute</a>
-             <div style="color:#c8a24b;font-size:12px;letter-spacing:1.2px;text-transform:uppercase;margin-top:4px;font-weight:600">Christ in Every Word</div>
-           </td></tr>
-           <tr><td style="padding:32px">
-             <h1 style="margin:0 0 18px;color:#2b2622;font-family:Georgia,serif;font-size:24px">Confirm your email</h1>
-             <p style="margin:0 0 16px;color:#2b2622;font-size:15px;line-height:1.65">Tap the button below to verify this email address. The link is valid for 24 hours.</p>
-             <table cellpadding="0" cellspacing="0" border="0" style="margin:24px 0"><tr><td bgcolor="#7a1c2f" style="border-radius:8px">
-               <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:12px 22px;color:#fff;font-weight:600;font-size:15px;text-decoration:none;font-family:Georgia,serif">Verify my email</a>
-             </td></tr></table>
-             <p style="margin:0;color:#6b6058;font-size:13px;line-height:1.6">If you did not create a Concordia account, you can safely ignore this email.</p>
-           </td></tr>
-         </table>
-       </td></tr>
-     </table>
+The code is already correct: `AuthContext.requestPasswordReset()` →
+`sb.auth.resetPasswordForEmail()`, then `/auth/callback` swaps the link's code
+for a session and forwards to `/reset-password`. It just needs dashboard config:
+
+1. **Authentication → URL Configuration**
+   - **Site URL**: `http://localhost:3000` while testing (your live URL later).
+   - **Redirect URLs** — add:
      ```
+     http://localhost:3000/auth/callback
+     ```
+     (add the production `https://.../auth/callback` when you deploy)
+   - If the callback isn't allowlisted, the email sends but the link dead-ends.
+     This is the most common reason "reset does nothing."
 
-   **c. Repeat for** "Reset password" and "Magic link" templates — same shell,
-   change the heading + the `{{ .ConfirmationURL }}` text to "Reset password" /
-   "Sign in to Concordia".
+2. **Authentication → Providers → Email** — make sure Email is enabled.
 
-   **d. Site URL** — Authentication → URL Configuration → set to
-   `https://concordiastudyguides.com` so the confirm links don't point at
-   localhost in production.
+3. **Delivery** — Supabase's **built-in email** sends resets out of the box,
+   no SMTP/third party. It's **rate-limited** (a few per hour) and meant for
+   low volume — fine for testing and a solo admin. If a test seems to do
+   nothing: check spam, and wait a few minutes if you've requested several in a
+   row (you may have hit the hourly limit).
 
-Once SMTP is configured, the verification email arrives from
-`contact@concordiastudyguides.com` with Concordia branding, and our own
-post-signup welcome email arrives from the same address moments later via
-`/api/email/send`.
+**Test:** go to `/forgot-password`, enter a real existing user's email → the
+reset email should arrive and its link should land you on `/reset-password`.
+
+---
+
+## Part B — Checkout notification to the owner (Resend, no domain needed)
+
+On checkout, `notifyPurchase()` (`lib/notifications.js`) sends **one** email —
+to you — via Resend. Because it only goes to *your own* inbox, Resend needs no
+domain verification: it sends from `onboarding@resend.dev`.
+
+1. **Create a Resend account** at resend.com **using the email you want the
+   notifications at** (e.g. your Gmail). Unverified Resend only delivers to
+   that exact address.
+2. **API Keys → Create** → copy the `re_...` key.
+3. **`.env.local`:**
+   ```
+   RESEND_API_KEY=re_xxxxxxxxxxxx
+   EMAIL_FROM=Concordia Bible Institute <onboarding@resend.dev>
+   NEXT_PUBLIC_ADMIN_EMAIL=the-same-email-you-signed-up-to-resend@example.com
+   ```
+4. **Restart `npm run dev`.**
+
+**Test:** add a guide to the cart and check out → a "New sale" email lands in
+your inbox. (If `RESEND_API_KEY` is blank, the send is just logged to the
+console + Admin·Email page — no error, site unaffected.)
+
+---
+
+## Later, if you want to email *customers* too
+
+That's the only thing that needs the domain. Verify `concordiabible.org` in
+Resend (it generates SPF/DKIM records that **CUW IT** must add to DNS), then set
+`EMAIL_FROM` to `noreply@concordiabible.org` and re-enable the customer-facing
+sends in `notifyPurchase`. Until then, customer emails stay off by design.
